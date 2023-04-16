@@ -1,102 +1,69 @@
-from string import ascii_lowercase, ascii_uppercase, digits, punctuation
-
+import sqlite3
 import tkinter as tk
+from tkinter import ttk
+import os
 
-from PIL import Image
+class Application(tk.Frame):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.master = master
+        self.grid()
+        self.create_widgets()
 
-import customtkinter as CTk
+    def create_widgets(self):
+        # Создаем текстовое поле и кнопку поиска
+        self.search_entry = tk.Entry(self)
+        self.search_entry.grid(row=0, column=0)
+        self.search_button = tk.Button(self, text='Поиск', command=self.search)
+        self.search_button.grid(row=0, column=1)
+        self.button = tk.Button(root, text="Запустить скрипты", command=self.run_scripts)
+        self.button.grid(row=0, column=2)
 
+        # Создаем таблицу
+        self.tree = ttk.Treeview(self, columns=('Name', 'Path'), show='headings')
+        self.tree.column('Name', width=100)
+        self.tree.column('Path', width=200)
+        self.tree.heading('Name', text='Name')
+        self.tree.heading('Path', text='Path')
+        self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")
 
+        # Выполняем начальный запрос к базе данных
+        self.search()
+        # Добавляем обработчик двойного щелчка на строки таблицы
+        self.tree.bind("<Double-1>", self.open_file)
 
-class App(CTk.CTk):
-    def __init__(self):
-        super().__init__()
+    def open_file(self, event):
+        # Получаем информацию о выбранной строке
+        item = self.tree.item(self.tree.selection()[0])
+        path = item['values'][1]
 
-        self.geometry("1200x450")
-        self.title("DISK-Z SEARCHER")
-        self.resizable(False, False)
+        # Открываем файл в стандартном приложении для его типа
+        os.startfile(path)
 
-        self.menu_frame =  CTk.CTkFrame(master=self)
-        self.menu_frame.grid(row=20, column=20, padx=(2000, 2000), pady=(2000, 20), sticky="nsew")
+    def run_scripts(self):
 
+        path = "C:/Users/DHOUSE/GitHub/2w/Sql_path_base/BASE/"
+        os.remove(f'{path}data.db')
+        os.system(f"python {path}INDEX_CREATE_BASE.py")
+        os.system(f"python {path}INDEX_ADDING_TO_BASE.py")
+        os.system(f"python {path}INDEX_CREATE_TABLE_IN_BASE.py")
 
-        self.settings_frame = CTk.CTkFrame(master=self)
-        self.settings_frame.grid(row=2, column=0, padx=(10, 20), pady=(10, 0), sticky="nsew")
+    def search(self):
+        # Получаем строку поиска из текстового поля
+        search_str = self.search_entry.get()
 
-        self.btn_generate = CTk.CTkButton(master=self.settings_frame, text="Update Base", width=100)
-        self.btn_generate.grid(row=1, column=0, columnspan=3, pady=(10, 20), sticky="ew")
+        # Выполняем запрос к базе данных
+        with sqlite3.connect('C:/Users/DHOUSE/GitHub/2w/Sql_path_base/BASE/data.db') as conn:
+            c = conn.cursor()
+            c.execute("SELECT namefile, pathfile FROM Pather WHERE namefile LIKE ?", ('%' + search_str + '%',))
+            rows = c.fetchall()
 
+        # Очищаем таблицу и добавляем данные
+        self.tree.delete(*self.tree.get_children())
+        for row in rows:
+            self.tree.insert('', 'end', values=row)
 
-
-        """ 
-        self.password_frame = CTk.CTkFrame(master=self, fg_color="transparent")
-        self.password_frame.grid(row=1, column=0, padx=(20, 20), pady=(20, 0), sticky="nsew")
-
-        self.entry_password = CTk.CTkEntry(master=self.password_frame, width=300)
-        self.entry_password.grid(row=0, column=0, padx=(0, 20))
-
-        self.btn_generate = CTk.CTkButton(master=self.password_frame, text="Generate", width=100,
-                                          command=self.set_password)
-        self.btn_generate.grid(row=0, column=1)
-
-        self.settings_frame = CTk.CTkFrame(master=self)
-        self.settings_frame.grid(row=2, column=0, padx=(20, 20), pady=(20, 0), sticky="nsew")
-
-        self.password_length_slider = CTk.CTkSlider(master=self.settings_frame, from_=0, to=100, number_of_steps=100,
-                                                    command=self.slider_event)
-        self.password_length_slider.grid(row=1, column=0, columnspan=3, pady=(20, 20), sticky="ew")
-
-        self.password_length_entry = CTk.CTkEntry(master=self.settings_frame, width=50)
-        self.password_length_entry.grid(row=1, column=3, padx=(20, 10), sticky="we")
-
-        self.cb_digits_var = tk.StringVar()
-
-        self.cb_digits = CTk.CTkCheckBox(master=self.settings_frame, text="0-9",
-                                         variable=self.cb_digits_var, onvalue=digits, offvalue="")
-        self.cb_digits.grid(row=2, column=0, padx=10)
-
-        self.cb_lower_var = tk.StringVar()
-        self.cb_lower = CTk.CTkCheckBox(master=self.settings_frame, text="a-z", variable=self.cb_lower_var,
-                                        onvalue=ascii_lowercase, offvalue="")
-        self.cb_lower.grid(row=2, column=1)
-
-        self.cb_upper_var = tk.StringVar()
-        self.cb_upper = CTk.CTkCheckBox(master=self.settings_frame, text="A-Z", variable=self.cb_upper_var,
-                                        onvalue=ascii_uppercase, offvalue="")
-        self.cb_upper.grid(row=2, column=2)
-
-        self.cb_symbols_var = tk.StringVar()
-        self.cb_symbols = CTk.CTkCheckBox(master=self.settings_frame, text="@#$%", variable=self.cb_symbols_var,
-                                          onvalue=punctuation, offvalue="")
-        self.cb_symbols.grid(row=2, column=3)
-
-        self.appearance_mode_option_menu = CTk.CTkOptionMenu(self.settings_frame,
-                                                             values=["Light", "Dark", "System"],
-                                                             command=self.change_appearance_mode_event)
-        self.appearance_mode_option_menu.grid(row=3, column=0, columnspan=4, pady=(10, 10))
-
-        self.appearance_mode_option_menu.set("System")
-        self.password_length_slider.set(12)
-        self.password_length_entry.insert(0, "12")"""
-
-    def slider_event(self, value):
-        self.password_length_entry.delete(0, 'end')
-        self.password_length_entry.insert(0, int(value))
-
-    def change_appearance_mode_event(self, new_appearance_mode):
-        CTk.set_appearance_mode(new_appearance_mode)
-
-    def get_characters(self):
-        chars = "".join(self.cb_digits_var.get() + self.cb_lower_var.get()
-                        + self.cb_upper_var.get() + self.cb_symbols_var.get())
-        return chars
-
-    def set_password(self):
-        self.entry_password.delete(0, 'end')
-        self.entry_password.insert(0, password.create_new(length=int(self.password_length_slider.get()),
-                                                          characters=self.get_characters()))
-
-
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+# Создаем окно
+root = tk.Tk()
+app = Application(master=root)
+app.mainloop()

@@ -7,8 +7,8 @@ class index_create_table_in_base():
             con.execute("""
                 CREATE TABLE Pather (
                    
-                   namefile STRING,
-                   pathfile STRING
+                   namefile TEXT,
+                   pathfile TEXT,
 
                 );
                     """)

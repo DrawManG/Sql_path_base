@@ -3,6 +3,13 @@ import os
 
 
 class index_getting_data():
+
+    def test(folder_path ):
+        file_list = []
+        for file in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, file)
+            if os.path.isfile(file_path):
+                file_list.append((file, file_path))
     def Initial_func(path):
         full_path,filenames = index_getting_data.walker(path)
         list = index_getting_data.create_sql_list(full_path,filenames)
@@ -37,4 +44,5 @@ path = "C:/Users/DHOUSE/Desktop/New folder/"
 
 
 
-index_getting_data.Initial_func(path)
+#index_getting_data.Initial_func(path)
+index_getting_data.test(path)
